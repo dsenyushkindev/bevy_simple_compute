@@ -4,7 +4,6 @@
 [![Doc](https://docs.rs/bevy_app_compute/badge.svg)](https://docs.rs/bevy_app_compute)
 [![Crate](https://img.shields.io/crates/v/bevy_app_compute.svg)](https://crates.io/crates/bevy_app_compute)
 
-
 Dispatch and run compute shaders on bevy from App World .
 
 ## Getting Started
@@ -13,7 +12,7 @@ Add the following line to your `Cargo.toml`
 
 ```toml
 [dependencies]
-bevy_app_compute = "0.10.3"
+bevy_app_compute = "0.12.1"
 ```
 
 ## Usage
@@ -121,9 +120,9 @@ let worker = AppComputeWorkerBuilder::new(world)
     .add_storage("input", &[1., 2., 3., 4.])
     .add_staging("output", &[0f32; 4])
     // add each item + `value` from `input` to `output`
-    .add_pass::<FirstPassShader>([4, 1, 1], &["value", "input", "output"]) 
+    .add_pass::<FirstPassShader>([4, 1, 1], &["value", "input", "output"])
     // multiply each element of `output` by itself
-    .add_pass::<SecondPassShader>([4, 1, 1], &["output"]) 
+    .add_pass::<SecondPassShader>([4, 1, 1], &["output"])
     .build();
 
     // the `output` buffer will contain [16.0, 25.0, 36.0, 49.0]
@@ -159,18 +158,16 @@ fn on_click_compute(
     if !buttons.just_pressed(MouseButton::Left) { return; }
 
     compute_worker.execute();
-} 
+}
 ```
 
 It will run at the end of the current frame, and you'll be able to read the data in the next frame.
 
 (see [one_shot.rs](https://github.com/kjolnyr/bevy_app_compute/tree/dev/examples/one_shot.rs))
 
-
 ## Examples
 
 See [examples](https://github.com/kjolnyr/bevy_app_compute/tree/main/examples)
-
 
 ## Features being worked upon
 
@@ -181,8 +178,9 @@ See [examples](https://github.com/kjolnyr/bevy_app_compute/tree/main/examples)
 
 ## Bevy version mapping
 
-|Bevy|bevy_app_compute|
-|---|---|
-|main|main|
-|0.10|0.10.3|
-|0.12|0.10.5|
+| Bevy   | bevy_app_compute |
+| ------ | ---------------- |
+| main   | main             |
+| 0.10   | 0.10.3           |
+| 0.12   | 0.10.5           |
+| 0.12.1 | 0.12.1           |
