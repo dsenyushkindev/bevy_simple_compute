@@ -7,14 +7,14 @@ use crate::{
     traits::ComputeWorker, worker::AppComputeWorker,
 };
 
-/// The main plugin. Always include it if you want to use `bevy_app_compute`
+/// The main plugin. Always include it if you want to use `bevy_simple_compute`
 pub struct AppComputePlugin;
 
 impl Plugin for AppComputePlugin {
     fn build(&self, _app: &mut App) {}
 
     fn finish(&self, app: &mut App) {
-        let render_device = app.world.resource::<RenderDevice>().clone();
+        let render_device = app.world().resource::<RenderDevice>().clone();
 
         app.insert_resource(AppPipelineCache::new(render_device))
             .add_systems(PreUpdate, extract_shaders)
@@ -39,7 +39,7 @@ impl<W: ComputeWorker> Plugin for AppComputeWorkerPlugin<W> {
     fn build(&self, _app: &mut App) {}
 
     fn finish(&self, app: &mut App) {
-        let worker = W::build(&mut app.world);
+        let worker = W::build(app.world_mut());
 
         app.insert_resource(worker)
             .add_systems(Update, AppComputeWorker::<W>::extract_pipelines)

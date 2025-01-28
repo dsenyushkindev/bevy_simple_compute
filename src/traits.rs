@@ -1,7 +1,5 @@
 use bevy::{
-    prelude::World,
-    reflect::TypeUuid,
-    render::render_resource::{PushConstantRange, BindGroupLayout, ShaderDefVal, ShaderRef}
+    prelude::World, reflect::TypePath, render::render_resource::{BindGroupLayout, ShaderDefVal, ShaderRef}
 };
 
 use crate::worker::AppComputeWorker;
@@ -12,7 +10,7 @@ pub trait ComputeWorker: Sized + Send + Sync + 'static {
 }
 
 /// Trait to declare your shaders.
-pub trait ComputeShader: TypeUuid + Send + Sync + 'static {
+pub trait ComputeShader: TypePath + Send + Sync + 'static {
     /// Implement your [`ShaderRef`]
     ///
     /// Usually, it comes from a path:
