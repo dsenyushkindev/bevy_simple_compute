@@ -1,11 +1,31 @@
-use bevy::{app::{App, Startup, Update}, DefaultPlugins, ecs::{system::{Commands, ResMut, Query, Res}, component::Component, query::With}, asset::Assets, render::{mesh::{Mesh, shape}, render_resource::ShaderRef, color::Color}, sprite::{ColorMaterial, MaterialMesh2dBundle}, reflect::TypeUuid, transform::components::Transform, math::{Vec3, Vec2}, prelude::default, core_pipeline::core_2d::Camera2dBundle, time::Time, window::{Window, PrimaryWindow}};
-use bevy_app_compute::prelude::*;
-use bytemuck::{Zeroable, Pod};
+use bevy::color::palettes::css::*;
+use bevy::core_pipeline::core_2d::Camera2d;
+use bevy::ecs::component::Component;
+use bevy::math::primitives::Circle;
+use bevy::pbr::{MeshMaterial3d, StandardMaterial};
+use bevy::render::mesh::Mesh3d;
+use bevy::{
+    app::{App, Startup, Update},
+    asset::Assets,
+    ecs::{
+        query::With,
+        system::{Commands, Query, Res, ResMut},
+    },
+    math::{Vec2, Vec3},
+    prelude::default,
+    reflect::TypePath,
+    render::{mesh::Mesh, render_resource::ShaderRef},
+    sprite::ColorMaterial,
+    time::Time,
+    transform::components::Transform,
+    window::{PrimaryWindow, Window},
+    DefaultPlugins,
+};
+use bevy_simple_compute::prelude::*;
+use bytemuck::{Pod, Zeroable};
 
 const G: f32 = 10.;
 const NUM_BODIES: usize = 4;
-
-
 
 #[derive(ShaderType, Pod, Zeroable, Clone, Copy)]
 #[repr(C)]
@@ -13,12 +33,10 @@ struct Body {
     mass: f32,
     pos: Vec2,
     vel: Vec2,
-    acc: Vec2
+    acc: Vec2,
 }
 
-
-#[derive(TypeUuid)]
-#[uuid = "2bab48ec-9983-47fd-811a-24f72c6e283c"]
+#[derive(TypePath)]
 struct NBodyInteractShader;
 
 impl ComputeShader for NBodyInteractShader {
@@ -27,8 +45,7 @@ impl ComputeShader for NBodyInteractShader {
     }
 }
 
-#[derive(TypeUuid)]
-#[uuid = "2bab48ec-9983-47fd-811a-24f72c6e283c"]
+#[derive(TypePath)]
 struct NBodyIntegrateShader;
 
 impl ComputeShader for NBodyIntegrateShader {
@@ -39,18 +56,16 @@ impl ComputeShader for NBodyIntegrateShader {
 
 pub struct NBodyWorker;
 
-
 impl ComputeWorker for NBodyWorker {
     fn build(world: &mut bevy::prelude::World) -> AppComputeWorker<Self> {
-
         let mut initial_bodies_data = Vec::with_capacity(NUM_BODIES);
-        
+
         for _ in 0..NUM_BODIES {
             initial_bodies_data.push(Body {
                 mass: 250.,
                 pos: Vec2::ZERO,
                 acc: Vec2::ZERO,
-                vel: Vec2::ZERO
+                vel: Vec2::ZERO,
             })
         }
 
@@ -59,7 +74,10 @@ impl ComputeWorker for NBodyWorker {
             .add_uniform("delta_time", &0.004f32)
             .add_staging("bodies_src", &initial_bodies_data)
             .add_staging("bodies_dst", &initial_bodies_data)
-            .add_pass::<NBodyInteractShader>([NUM_BODIES as u32, 1, 1], &["delta_time", "bodies_src", "bodies_dst"])
+            .add_pass::<NBodyInteractShader>(
+                [NUM_BODIES as u32, 1, 1],
+                &["delta_time", "bodies_src", "bodies_dst"],
+            )
             .add_swap("bodies_src", "bodies_dst")
             .build()
     }
@@ -81,25 +99,19 @@ fn main() {
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-
-    commands.spawn(Camera2dBundle::default());
-
+    commands.spawn(Camera2d::default());
 
     for i in 0..NUM_BODIES {
-
-        commands.spawn(MaterialMesh2dBundle {
-            mesh: meshes.add(shape::Circle::new(10.).into()).into(),
-            material: materials.add(ColorMaterial::from(Color::GREEN)),
-            transform: Transform::from_translation(Vec3::new(-100., 100., 0.)),
-            ..default()
-        })
-        .insert(BodyEntity(i as usize));
+        commands.spawn((
+            Mesh3d(meshes.add(Circle::new(10.))),
+            MeshMaterial3d(materials.add(StandardMaterial::from_color(GREEN))),
+            Transform::from_translation(Vec3::new(-100., 100., 0.)),
+            BodyEntity(i as usize),
+        ));
     }
-
 }
-
 
 fn move_bodies(
     time: Res<Time>,
@@ -107,7 +119,6 @@ fn move_bodies(
     q_window: Query<&Window, With<PrimaryWindow>>,
     mut q_bodies: Query<(&mut Transform, &BodyEntity)>,
 ) {
-
     if !worker.ready() {
         return;
     }
@@ -115,7 +126,7 @@ fn move_bodies(
     let window = q_window.single();
 
     let bodies = worker.read_vec::<Body>("body_dst");
-    worker.write("delta_time", &time.delta_seconds());
+    worker.write("delta_time", &time.delta_secs());
 
     q_bodies
         .par_iter_mut()
@@ -142,7 +153,7 @@ fn simulate(
     time: Res<Time>,
     mut q_bodies: Query<(&Transform, &mut Body)>
 ) {
-    
+
     let mut combinaisons = q_bodies.iter_combinations_mut();
     let dt_sq = time.delta_seconds() * time.delta_seconds();
 
