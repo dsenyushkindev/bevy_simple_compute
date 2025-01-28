@@ -1,15 +1,13 @@
 use std::{borrow::Cow, marker::PhantomData};
 
 use bevy::{
-    prelude::{AssetServer, World},
-    render::{
+    prelude::{AssetServer, World}, reflect::TypePath, render::{
         render_resource::{
             encase::{private::WriteInto, StorageBuffer, UniformBuffer},
             Buffer, ComputePipelineDescriptor, ShaderRef, ShaderType,
         },
         renderer::RenderDevice,
-    },
-    utils::{HashMap, Uuid},
+    }, utils::HashMap
 };
 use wgpu::{util::BufferInitDescriptor, BufferDescriptor, BufferUsages};
 
@@ -23,7 +21,7 @@ use crate::{
 /// from your structs implementing [`ComputeWorker`]
 pub struct AppComputeWorkerBuilder<'a, W: ComputeWorker> {
     pub(crate) world: &'a mut World,
-    pub(crate) cached_pipeline_ids: HashMap<Uuid, CachedAppComputePipelineId>,
+    pub(crate) cached_pipeline_ids: HashMap<&'static str, CachedAppComputePipelineId>,
     pub(crate) buffers: HashMap<String, Buffer>,
     pub(crate) staging_buffers: HashMap<String, StagingBuffer>,
     pub(crate) steps: Vec<Step>,
@@ -209,7 +207,7 @@ impl<'a, W: ComputeWorker> AppComputeWorkerBuilder<'a, W> {
     /// Add a new compute pass to your worker.
     /// They will run sequentially in the order you insert them.
     pub fn add_pass<S: ComputeShader>(&mut self, workgroups: [u32; 3], vars: &[&str]) -> &mut Self {
-        if !self.cached_pipeline_ids.contains_key(&S::TYPE_UUID) {
+        if !self.cached_pipeline_ids.contains_key(&S::type_path()) {
             let pipeline_cache = self.world.resource::<AppPipelineCache>();
 
             let asset_server = self.world.resource::<AssetServer>();
@@ -227,15 +225,16 @@ impl<'a, W: ComputeWorker> AppComputeWorkerBuilder<'a, W> {
                 shader_defs: S::shader_defs().to_vec(),
                 entry_point: Cow::Borrowed(S::entry_point()),
                 shader,
+                zero_initialize_workgroup_memory: true
             });
 
-            self.cached_pipeline_ids.insert(S::TYPE_UUID, cached_id);
+            self.cached_pipeline_ids.insert(S::type_path(), cached_id);
         }
 
         self.steps.push(Step::ComputePass(ComputePass {
             workgroups,
             vars: vars.iter().map(|a| String::from(*a)).collect(),
-            shader_uuid: S::TYPE_UUID,
+            shader_type_path: S::type_path(),
         }));
         self
     }

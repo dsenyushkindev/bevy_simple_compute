@@ -12,7 +12,7 @@ use std::mem;
 use bevy::prelude::*;
 use bevy::render::render_resource::{
     BindGroupLayout, BindGroupLayoutId, CachedPipelineState, ComputePipeline,
-    ComputePipelineDescriptor, ErasedPipelineLayout, ErasedShaderModule, Pipeline,
+    ComputePipelineDescriptor, Pipeline,
     PipelineCacheError, Shader, ShaderDefVal, ShaderImport, Source,
 };
 use bevy::render::renderer::RenderDevice;
@@ -22,7 +22,7 @@ use parking_lot::Mutex;
 #[cfg(feature = "shader_format_spirv")]
 use wgpu::util::make_spirv;
 use wgpu::{
-    Features, PipelineLayout, PipelineLayoutDescriptor, PushConstantRange, ShaderModuleDescriptor,
+    Features, PipelineCompilationOptions, PipelineLayout, PipelineLayoutDescriptor, PushConstantRange, ShaderModule, ShaderModuleDescriptor
 };
 
 pub struct CachedAppPipeline {
@@ -47,7 +47,7 @@ impl CachedAppComputePipelineId {
 #[derive(Default)]
 struct ShaderData {
     pipelines: HashSet<CachedAppComputePipelineId>,
-    processed_shaders: HashMap<Vec<ShaderDefVal>, ErasedShaderModule>,
+    processed_shaders: HashMap<Vec<ShaderDefVal>, ShaderModule>,
     resolved_imports: HashMap<ShaderImport, AssetId<Shader>>,
     dependents: HashSet<AssetId<Shader>>,
 }
@@ -140,7 +140,7 @@ impl ShaderCache {
         pipeline: CachedAppComputePipelineId,
         shader_asset_id: &AssetId<Shader>,
         shader_defs: &[ShaderDefVal],
-    ) -> Result<ErasedShaderModule, PipelineCacheError> {
+    ) -> Result<&mut ShaderModule, PipelineCacheError> {
         let shader = self
             .shaders
             .get(shader_asset_id)
@@ -247,11 +247,11 @@ impl ShaderCache {
                     return Err(PipelineCacheError::CreateShaderModule(description));
                 }
 
-                entry.insert(ErasedShaderModule::new(shader_module))
+                entry.insert(shader_module)
             }
         };
 
-        Ok(module.clone())
+        Ok(module)
     }
 
     fn clear(&mut self, shader_asset_id: &AssetId<Shader>) -> Vec<CachedAppComputePipelineId> {
@@ -319,9 +319,9 @@ impl ShaderCache {
 }
 
 type LayoutCacheKey = (Vec<BindGroupLayoutId>, Vec<PushConstantRange>);
-#[derive(Default, Clone)]
+#[derive(Default)]
 struct LayoutCache {
-    layouts: HashMap<LayoutCacheKey, ErasedPipelineLayout>,
+    layouts: HashMap<LayoutCacheKey, PipelineLayout>,
 }
 
 impl LayoutCache {
@@ -339,13 +339,13 @@ impl LayoutCache {
                     .iter()
                     .map(|l| l.value())
                     .collect::<Vec<_>>();
-                ErasedPipelineLayout::new(render_device.create_pipeline_layout(
+                render_device.create_pipeline_layout(
                     &PipelineLayoutDescriptor {
                         bind_group_layouts: &bind_group_layouts,
                         push_constant_ranges,
                         ..default()
                     },
-                ))
+                )
             })
     }
 }
@@ -461,7 +461,9 @@ impl AppPipelineCache {
             label: descriptor.label.as_deref(),
             layout,
             module: &compute_module,
-            entry_point: descriptor.entry_point.as_ref(),
+            entry_point: Some(descriptor.entry_point.as_ref()),
+            compilation_options: PipelineCompilationOptions::default(),
+            cache: None,
         };
 
         let pipeline = self.device.create_compute_pipeline(&descriptor);

@@ -2,19 +2,15 @@
 //! For now they are stupid and just fly straight, need to fix this later on.
 //! Reimplementation of https://github.com/gfx-rs/wgpu-rs/blob/master/examples/boids/main.rs
 
+use bevy::color::palettes::css::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 
-use bevy::{
-    core::Pod,
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-    window::PrimaryWindow,
-};
+use bevy::{prelude::*, window::PrimaryWindow};
 
-use bevy_app_compute::prelude::*;
-use bytemuck::Zeroable;
+use bevy_simple_compute::prelude::*;
+use bytemuck::{Pod, Zeroable};
 
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::{Distribution, Uniform};
 
 // Debug mode
 //const NUM_BOIDS: u32 = 500;
@@ -41,8 +37,7 @@ struct Boid {
     vel: Vec2,
 }
 
-#[derive(TypeUuid)]
-#[uuid = "2545ae14-a9bc-4f03-9ea4-4eb43d1075a7"]
+#[derive(TypePath)]
 struct BoidsShader;
 
 impl ComputeShader for BoidsShader {
@@ -66,8 +61,8 @@ impl ComputeWorker for BoidWorker {
         };
 
         let mut initial_boids_data = Vec::with_capacity(NUM_BOIDS as usize);
-        let mut rng = rand::thread_rng();
-        let unif = Uniform::new_inclusive(-1., 1.);
+        let mut rng = rand::rng();
+        let unif = Uniform::new_inclusive(-1., 1.).expect("Couldn't create new Uniform rand distribution instance!");
 
         for _ in 0..NUM_BOIDS {
             initial_boids_data.push(Boid {
@@ -100,10 +95,10 @@ fn main() {
         .add_plugins(FrameTimeDiagnosticsPlugin::default())
         .add_plugins(AppComputePlugin)
         .add_plugins(AppComputeWorkerPlugin::<BoidWorker>::default())
-        .insert_resource(ClearColor(Color::DARK_GRAY))
+        .insert_resource(ClearColor(DARK_GRAY.into()))
         .add_systems(Startup, setup)
         .add_systems(Update, move_entities)
-        .run()
+        .run();
 }
 
 #[derive(Component)]
@@ -114,29 +109,23 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d::default());
 
-    let boid_mesh = meshes.add(shape::RegularPolygon::new(5., 3).into());
-    let boid_material = materials.add(Color::ANTIQUE_WHITE.into());
+    let boid_mesh = meshes.add(RegularPolygon::new(5., 3));
+    let boid_material = materials.add(ColorMaterial::from_color(ANTIQUE_WHITE));
 
     // First boid in red, so we can follow it easily
     commands.spawn((
         BoidEntity(0),
-        MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(boid_mesh.clone()),
-            material: materials.add(Color::ORANGE_RED.into()),
-            ..Default::default()
-        },
+        Mesh2d(boid_mesh.clone()),
+        MeshMaterial2d(materials.add(ColorMaterial::from_color(ORANGE_RED))),
     ));
 
     for i in 1..NUM_BOIDS {
         commands.spawn((
             BoidEntity(i as usize),
-            MaterialMesh2dBundle {
-                mesh: Mesh2dHandle(boid_mesh.clone()),
-                material: boid_material.clone(),
-                ..Default::default()
-            },
+            Mesh2d(boid_mesh.clone()),
+            MeshMaterial2d(boid_material.clone()),
         ));
     }
 }
@@ -155,7 +144,7 @@ fn move_entities(
 
     let boids = worker.read_vec::<Boid>("boids_dst");
 
-    worker.write("delta_time", &time.delta_seconds());
+    worker.write("delta_time", &time.delta_secs());
 
     q_boid
         .par_iter_mut()

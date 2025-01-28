@@ -7,7 +7,7 @@ use bevy::{
         render_resource::{Buffer, ComputePipeline},
         renderer::{RenderDevice, RenderQueue},
     },
-    utils::{HashMap, Uuid},
+    utils::{HashMap},
 };
 use bytemuck::{bytes_of, cast_slice, from_bytes, AnyBitPattern, NoUninit};
 use wgpu::{
@@ -46,7 +46,7 @@ pub(crate) enum Step {
 pub(crate) struct ComputePass {
     pub(crate) workgroups: [u32; 3],
     pub(crate) vars: Vec<String>,
-    pub(crate) shader_uuid: Uuid,
+    pub(crate) shader_type_path: &'static str,
 }
 
 #[derive(Clone, Debug)]
@@ -65,8 +65,8 @@ pub struct AppComputeWorker<W: ComputeWorker> {
     pub(crate) state: WorkerState,
     render_device: RenderDevice,
     render_queue: RenderQueue,
-    cached_pipeline_ids: HashMap<Uuid, CachedAppComputePipelineId>,
-    pipelines: HashMap<Uuid, Option<ComputePipeline>>,
+    cached_pipeline_ids: HashMap<&'static str, CachedAppComputePipelineId>,
+    pipelines: HashMap<&'static str, Option<ComputePipeline>>,
     buffers: HashMap<String, Buffer>,
     staging_buffers: HashMap<String, StagingBuffer>,
     steps: Vec<Step>,
@@ -131,7 +131,7 @@ impl<W: ComputeWorker> AppComputeWorker<W> {
 
         let Some(maybe_pipeline) = self
                 .pipelines
-                .get(&compute_pass.shader_uuid)
+                .get(&compute_pass.shader_type_path)
                 else { return Err(Error::PipelinesEmpty) };
 
         let Some(pipeline) = maybe_pipeline else {
@@ -147,7 +147,7 @@ impl<W: ComputeWorker> AppComputeWorker<W> {
 
         let Some(encoder) = &mut self.command_encoder else { return Err(Error::EncoderIsNone) };
         {
-            let mut cpass = encoder.begin_compute_pass(&ComputePassDescriptor { label: None });
+            let mut cpass = encoder.begin_compute_pass(&ComputePassDescriptor { label: None, timestamp_writes: None });
             cpass.set_pipeline(pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.dispatch_workgroups(
@@ -324,7 +324,7 @@ impl<W: ComputeWorker> AppComputeWorker<W> {
     fn poll(&self) -> bool {
         self.render_device
             .wgpu_device()
-            .poll(wgpu::MaintainBase::Wait)
+            .poll(wgpu::MaintainBase::Wait).is_queue_empty()
     }
 
     /// Check if the worker is ready to be read from.

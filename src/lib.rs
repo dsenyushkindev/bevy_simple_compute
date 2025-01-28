@@ -21,7 +21,7 @@ pub mod prelude {
     };
 
     // Since these are always used when using this crate
-    pub use bevy::{reflect::TypeUuid, render::render_resource::{ShaderRef, ShaderType}};
+    pub use bevy::{render::render_resource::{ShaderRef, ShaderType}};
 }
 
 pub(crate) fn process_pipeline_queue_system(mut pipeline_cache: ResMut<AppPipelineCache>) {
@@ -41,11 +41,12 @@ pub(crate) fn extract_shaders(
                 }
             }
             AssetEvent::Removed { id: shader_id } => pipeline_cache.remove_shader(shader_id),
+            AssetEvent::Unused { id: shader_id } => pipeline_cache.remove_shader(shader_id),
             AssetEvent::LoadedWithDependencies { id: shader_id } => {
                 if let Some(shader) = shaders.get(shader_id.clone()) {
                     pipeline_cache.set_shader(shader_id, shader);
                 }
-            }
+            },
         }
     }
 }
