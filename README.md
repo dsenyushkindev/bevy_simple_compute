@@ -184,9 +184,12 @@ Any contributions are welcome.
 
 ## Bevy version mapping
 
-|Bevy|bevy_app_compute|
+Newer versions of the crate have the following versioning format: first two numbers show supported major Bevy version (e.g. bevy_simple_compute of version range 0.15.* implies support of all version range of Bevy 0.15) and the third number is a crate's version for this version of Bevy.
+
+|Bevy|bevy_simple_compute|
 |---|---|
 |main|main|
-|0.15.1|0.15.1|
+|0.15|0.15.1|
+|0.15|0.15.2|
 |0.10|0.10.3|
 |0.12|0.10.5|
