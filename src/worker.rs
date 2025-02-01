@@ -18,7 +18,7 @@ use wgpu::{
 use crate::{
     error::{Error, Result},
     pipeline_cache::{AppPipelineCache, CachedAppComputePipelineId},
-    traits::ComputeWorker,
+    traits::{ComputeShader, ComputeWorker},
     worker_builder::AppComputeWorkerBuilder,
 };
 
@@ -311,6 +311,22 @@ impl<W: ComputeWorker> AppComputeWorker<W> {
     #[inline]
     pub fn write_slice<T: NoUninit>(&mut self, target: &str, data: &[T]) {
         self.try_write_slice(target, data).unwrap()
+    }
+
+    /// Set new workgroups for `ComputeShader` (compute pass) specified by user.
+    #[inline]
+    pub fn set_pass_workgroups<T: ComputeShader> (&mut self, workgroups: [u32; 3]) {
+        for step in self.steps.iter_mut() {
+            match step {
+                Step::ComputePass(compute_pass) => {
+                    if compute_pass.shader_type_path == T::type_path() {
+                        compute_pass.workgroups = workgroups;
+                        return;
+                    }
+                },
+                Step::Swap(_, _) => {},
+            }
+        }
     }
 
     fn submit(&mut self) -> &mut Self {
