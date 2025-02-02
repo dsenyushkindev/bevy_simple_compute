@@ -4,7 +4,7 @@
 [![Doc](https://docs.rs/bevy_simple_compute/badge.svg)](https://docs.rs/bevy_simple_compute)
 [![Crate](https://img.shields.io/crates/v/bevy_simple_compute.svg)](https://crates.io/crates/bevy_simple_compute)
 
-Dispatch and run compute shaders on bevy from App World.
+Dispatch and run compute shaders on Bevy from App World.
 
 ## Credits
 Many thanks to [Kjolnyr](https://github.com/Kjolnyr/) for developing the original `bevy_app_compute` crate. This crate is a fork updated to support newer versions of the Bevy Engine.
@@ -26,6 +26,7 @@ Declare your shaders in structs implementing `ComputeShader`. The `shader()` fn 
 You need to derive `TypePath` as well and assign a unique Uuid:
 
 ```rust
+#[derive(TypePath)]
 #[derive(TypePath)]
 struct SimpleShader;
 
@@ -82,14 +83,9 @@ fn main(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
 Add the `AppComputePlugin` plugin to your app, as well as one `AppComputeWorkerPlugin` per struct implementing `ComputeWorker`:
 
 ```rust
-use bevy::prelude::*;
-use bevy_app_compute::AppComputePlugin;
-
-fn main() {
-    App::new()
-        .add_plugins(AppComputePlugin)
-        .add_plugins(AppComputeWorkerPlugin::<SimpleComputeWorker>::default());
-}
+App::new()
+    // ... other plugins ...
+    .add_plugins(bevy_easy_compute::AppComputeWorkerPlugin::<SimpleComputeWorker>::default());
 ```
 
 Your compute worker will now run every frame, during the `PostUpdate` stage. To read/write from it, use the `AppComputeWorker<T>` resource!
@@ -98,7 +94,7 @@ Your compute worker will now run every frame, during the `PostUpdate` stage. To 
 fn my_system(
     mut compute_worker: ResMut<AppComputeWorker<SimpleComputeWorker>>
 ) {
-    if !compute_worker.available() {
+    if !compute_worker.ready() {
         return;
     };
 
@@ -125,10 +121,10 @@ let worker = AppComputeWorkerBuilder::new(world)
     .add_pass::<FirstPassShader>([4, 1, 1], &["value", "input", "output"])
     // multiply each element of `output` by itself
     .add_pass::<SecondPassShader>([4, 1, 1], &["output"])
+    .add_pass::<SecondPassShader>([4, 1, 1], &["output"])
     .build();
 
     // the `output` buffer will contain [16.0, 25.0, 36.0, 49.0]
-
 ```
 
 (see [multi_pass.rs](https://github.com/dsenyushkindev/bevy_simple_compute/tree/dev/examples/multi_pass.rs))
@@ -160,6 +156,7 @@ fn on_click_compute(
     if !buttons.just_pressed(MouseButton::Left) { return; }
 
     compute_worker.execute();
+}
 }
 ```
 

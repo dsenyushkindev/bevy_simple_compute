@@ -1,4 +1,4 @@
-//! Example showing how to execute compute shaders on demand
+//! Example showing how to execute compute shaders on-demand
 
 use bevy::{prelude::*, render::render_resource::ShaderRef};
 use bevy_simple_compute::prelude::*;
@@ -32,9 +32,15 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(AppComputePlugin)
+        .add_systems(Startup, setup)
         .add_plugins(AppComputeWorkerPlugin::<SimpleComputeWorker>::default())
         .add_systems(Update, (on_click_compute, read_data))
         .run();
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera3d::default());
+    println!("Click anywhere in the window to trigger a one-shot compute job");
 }
 
 fn on_click_compute(

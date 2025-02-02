@@ -1,5 +1,7 @@
 use bevy::{
-    prelude::World, reflect::TypePath, render::render_resource::{BindGroupLayout, ShaderDefVal, ShaderRef}
+    prelude::World,
+    reflect::TypePath,
+    render::render_resource::{BindGroupLayout, ShaderDefVal, ShaderRef},
 };
 use wgpu::PushConstantRange;
 

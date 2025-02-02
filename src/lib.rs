@@ -14,7 +14,10 @@ mod worker_builder;
 /// Helper module to import most used elements.
 pub mod prelude {
     pub use crate::{
-        plugin::{AppComputePlugin, AppComputeWorkerPlugin},
+        plugin::{
+            AppComputePlugin, AppComputeWorkerPlugin, BevyEasyComputePostUpdateSet,
+            BevyEasyComputeSet,
+        },
         traits::{ComputeShader, ComputeWorker},
         worker::AppComputeWorker,
         worker_builder::AppComputeWorkerBuilder,
@@ -36,17 +39,18 @@ pub(crate) fn extract_shaders(
     for event in events.read() {
         match event {
             AssetEvent::Added { id: shader_id } | AssetEvent::Modified { id: shader_id } => {
-                if let Some(shader) = shaders.get(shader_id.clone()) {
+                if let Some(shader) = shaders.get(*shader_id) {
                     pipeline_cache.set_shader(shader_id, shader);
                 }
             }
             AssetEvent::Removed { id: shader_id } => pipeline_cache.remove_shader(shader_id),
             AssetEvent::Unused { id: shader_id } => pipeline_cache.remove_shader(shader_id),
             AssetEvent::LoadedWithDependencies { id: shader_id } => {
-                if let Some(shader) = shaders.get(shader_id.clone()) {
+                if let Some(shader) = shaders.get(*shader_id) {
                     pipeline_cache.set_shader(shader_id, shader);
                 }
-            },
+            }
+            AssetEvent::Unused { id: _ } => (),
         }
     }
 }
