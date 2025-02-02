@@ -15,7 +15,7 @@ Add the following line to your `Cargo.toml`
 
 ```toml
 [dependencies]
-bevy_simple_compute = "0.15.1"
+bevy_simple_compute = "0.15.3"
 ```
 
 ## Usage
@@ -188,5 +188,6 @@ Newer versions of the crate have the following versioning format: first two numb
 |main|main|
 |0.15|0.15.1|
 |0.15|0.15.2|
+|0.15|0.15.3|
 |0.10|0.10.3|
 |0.12|0.10.5|
