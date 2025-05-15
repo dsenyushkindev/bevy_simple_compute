@@ -9,6 +9,8 @@ use std::iter::FusedIterator;
 use std::mem;
 use std::sync::Arc;
 
+use bevy::platform::collections::hash_map::Entry;
+use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 use bevy::render::render_resource::{
     BindGroupLayout, BindGroupLayoutId, CachedPipelineState, ComputePipeline,
@@ -16,7 +18,7 @@ use bevy::render::render_resource::{
     PipelineCacheError, Shader, ShaderDefVal, ShaderImport, Source,
 };
 use bevy::render::renderer::{RenderAdapter, RenderDevice, WgpuWrapper};
-use bevy::utils::{Entry, HashMap, HashSet};
+use bevy::tasks::futures::now_or_never;
 use naga::valid::Capabilities;
 use parking_lot::Mutex;
 #[cfg(feature = "shader_format_spirv")]
@@ -26,7 +28,6 @@ use wgpu::{
 };
 
 type ErasedShaderModule = Arc<WgpuWrapper<ShaderModule>>;
-type ErasedPipelineLayout = Arc<WgpuWrapper<PipelineLayout>>;
 
 pub struct CachedAppPipeline {
     state: CachedPipelineState,
@@ -305,7 +306,7 @@ impl ShaderCache {
                 render_device
                     .wgpu_device()
                     .push_error_scope(wgpu::ErrorFilter::Validation);
-                let shader_module = render_device.create_shader_module(module_descriptor);
+                let shader_module = unsafe { render_device.create_shader_module(module_descriptor) }; // Should be fine
                 let error = render_device.wgpu_device().pop_error_scope();
 
                 // `now_or_never` will return Some if the future is ready and None otherwise.
@@ -313,7 +314,7 @@ impl ShaderCache {
                 // So to keep the complexity of the ShaderCache low, we will only catch this error early on native platforms,
                 // and on wasm the error will be handled by wgpu and crash the application.
                 if let Some(Some(wgpu::Error::Validation { description, .. })) =
-                    bevy::utils::futures::now_or_never(error)
+                    now_or_never(error)
                 {
                     return Err(PipelineCacheError::CreateShaderModule(description));
                 }

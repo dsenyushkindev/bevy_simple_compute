@@ -6,13 +6,12 @@ use std::{
 };
 
 use bevy::{
-    prelude::{Res, ResMut, Resource},
-    render::{
+    platform::collections::HashMap, prelude::{Res, ResMut, Resource}, render::{
         render_resource::{Buffer, ComputePipeline},
         renderer::{RenderDevice, RenderQueue},
-    },
-    utils::HashMap,
+    }
 };
+
 use bytemuck::{bytes_of, cast_slice, from_bytes, AnyBitPattern, NoUninit};
 use wgpu::{BindGroupEntry, CommandEncoder, CommandEncoderDescriptor, ComputePassDescriptor};
 
@@ -187,8 +186,8 @@ impl<W: ComputeWorker> AppComputeWorker<W> {
             return Err(Error::BufferNotFound(buf_b_name.to_owned()));
         }
 
-        let [buffer_a, buffer_b] = self.buffers.get_many_mut([buf_a_name, buf_b_name]).unwrap();
-        std::mem::swap(buffer_a, buffer_b);
+        let [buffer_a, buffer_b] = self.buffers.get_many_mut([buf_a_name, buf_b_name]);
+        std::mem::swap(buffer_a.unwrap(), buffer_b.unwrap());
 
         Ok(())
     }

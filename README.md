@@ -186,6 +186,7 @@ Newer versions of the crate have the following versioning format: first two numb
 |Bevy|bevy_simple_compute|
 |---|---|
 |main|main|
+|0.16|0.16.0|
 |0.15|0.15.1|
 |0.15|0.15.2|
 |0.15|0.15.3|

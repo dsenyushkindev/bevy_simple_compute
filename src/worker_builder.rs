@@ -1,14 +1,13 @@
 use std::{borrow::Cow, marker::PhantomData, time::Duration};
 
 use bevy::{
-    prelude::{AssetServer, World}, reflect::TypePath, render::{
+    platform::collections::HashMap, prelude::{AssetServer, World}, render::{
         render_resource::{
             encase::{private::WriteInto, StorageBuffer, UniformBuffer},
             Buffer, ComputePipelineDescriptor, ShaderRef, ShaderType,
         },
         renderer::RenderDevice,
-    },
-    utils::HashMap,
+    }
 };
 use wgpu::{util::BufferInitDescriptor, BufferDescriptor, BufferUsages};
 

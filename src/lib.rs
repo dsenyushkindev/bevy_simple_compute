@@ -50,7 +50,6 @@ pub(crate) fn extract_shaders(
                     pipeline_cache.set_shader(shader_id, shader);
                 }
             }
-            AssetEvent::Unused { id: _ } => (),
         }
     }
 }

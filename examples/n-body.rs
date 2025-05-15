@@ -123,7 +123,7 @@ fn move_bodies(
         return;
     }
 
-    let window = q_window.single();
+    let window = q_window.single().unwrap();
 
     let bodies = worker.read_vec::<Body>("body_dst");
     worker.write("delta_time", &time.delta_secs());

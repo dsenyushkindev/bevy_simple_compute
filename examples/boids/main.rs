@@ -19,7 +19,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(LogDiagnosticsPlugin::default())
-        .add_plugins(FrameTimeDiagnosticsPlugin)
+        .add_plugins(FrameTimeDiagnosticsPlugin::default())
         .add_plugins(AppComputePlugin)
         .add_plugins(AppComputeWorkerPlugin::<BoidWorker>::default())
         .insert_resource(ClearColor(css::BLACK.into()))
@@ -66,7 +66,7 @@ fn move_entities(
         return;
     }
 
-    let window = q_window.single();
+    let window = q_window.single().unwrap();
 
     let boids = worker.read_vec::<Boid>("boids_dst");
 

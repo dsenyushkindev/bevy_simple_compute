@@ -32,7 +32,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(LogDiagnosticsPlugin::default())
-        .add_plugins(FrameTimeDiagnosticsPlugin)
+        .add_plugins(FrameTimeDiagnosticsPlugin::default())
         .add_plugins(AppComputePlugin)
         .add_plugins(AppComputeWorkerPlugin::<GameOfLifeWorker>::default())
         .add_plugins(DrawPlugin)
